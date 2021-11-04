@@ -60,7 +60,5 @@ jobs:
       run: make collection
     - name: Commit collection
       run: make commit-collection
-    - name: push collection files to S3
-      run: make push-collection-s3
-    - name: Run the pipeline to make the dataset
+    - name: Submit AWS batch job to run pipeline and make dataset
       run: make pipeline-run
