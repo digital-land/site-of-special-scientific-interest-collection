@@ -60,6 +60,7 @@ define build-dataset =
 	mkdir -p $(@D)
 	time digital-land --pipeline-name $(notdir $(basename $@)) load-entries --output-path $(basename $@).sqlite3 $(^)
 	time digital-land --pipeline-name $(notdir $(basename $@)) build-dataset $(basename $@).sqlite3 $@
+	md5sum $@ $(basename $@).sqlite3
 endef
 
 collection:: collection/pipeline.mk
@@ -106,6 +107,8 @@ commit-dataset::
 
 fetch-s3::
 	aws s3 sync s3://collection-dataset/$(REPOSITORY)/$(RESOURCE_DIR) $(RESOURCE_DIR) --no-progress
+
+fetch-transformed-s3::
 	aws s3 sync s3://collection-dataset/$(REPOSITORY)/$(ISSUE_DIR) $(ISSUE_DIR) --no-progress
 	aws s3 sync s3://collection-dataset/$(REPOSITORY)/$(TRANSFORMED_DIR) $(TRANSFORMED_DIR) --no-progress
 	aws s3 sync s3://collection-dataset/$(REPOSITORY)/$(DATASET_DIR) $(DATASET_DIR) --no-progress
@@ -128,3 +131,6 @@ push-dataset-s3::
 pipeline-run::
 	aws batch submit-job --job-name $(REPOSITORY)-$(shell date '+%Y-%m-%d-%H-%M-%S') --job-queue dl-batch-queue --job-definition dl-batch-def --container-overrides '{"environment": [{"name":"BATCH_FILE_URL","value":"https://raw.githubusercontent.com/digital-land/docker-builds/main/pipeline_run.sh"}, {"name" : "REPOSITORY","value" : "$(REPOSITORY)"}]}'
 
+var/converted/%.csv: collection/resource/%
+	mkdir -p var/converted/
+	digital-land convert $<
